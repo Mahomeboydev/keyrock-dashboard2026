@@ -1,4 +1,4 @@
-# app.py - Live 2026 Keyrock Metrics Dashboard with Real API Integrations
+# app.py - Debug & Fixed Version for Keyrock 2026 Dashboard
 
 import streamlit as st
 import pandas as pd
@@ -6,61 +6,79 @@ import plotly.express as px
 import plotly.graph_objects as go
 import time
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime
 
 st.set_page_config(page_title="2026 Keyrock Metrics Dashboard", layout="wide")
-st.title("Live Tracking: 12 Charts to Watch in 2026 (Real APIs)")
 
-# Auto-refresh every 10 minutes (adjust as needed; respect API rate limits)
+st.title("Live Tracking: 12 Charts to Watch in 2026 (Debug & Fixed)")
+
+st.write("**Debug Step 1:** Title loaded successfully. Script is running.")
+
+if st.button("Manual Refresh (force rerun)"):
+    st.rerun()
+
+# Session state
 if 'last_update' not in st.session_state:
     st.session_state.last_update = time.time()
 if time.time() - st.session_state.last_update > 600:
     st.session_state.last_update = time.time()
     st.rerun()
 
-# Optional: Add your API keys via Streamlit secrets (in .streamlit/secrets.toml or cloud settings)
-# Example secrets.toml:
-# COINGLASS_API_KEY = "your_key_here"
+st.write("**Debug Step 2:** Session state block completed.")
 
-# ────────────────────────────────────────────────
-# Metrics config with fetch lambdas
-# ────────────────────────────────────────────────
+# Minimal metrics list for debug (only 2; comment out fetches if needed)
 metrics = [
-    {"title": "1. Prediction Market Volumes by Market-Type", "description": "Weekly total prediction market trading volume, broken down by market type.", "goal": 25e9, "unit": "$B",
-     "fetch_current": lambda: fetch_polymarket_volume(), "fetch_historical": lambda: pd.DataFrame()},
-    {"title": "2. RWA Onchain Tokenisation AUM", "description": "Weekly total onchain RWA assets under management (excluding stablecoins).", "goal": 40e9, "unit": "$B",
-     "fetch_current": lambda: fetch_rwa_aum(), "fetch_historical": lambda: pd.DataFrame()},
-    {"title": "3. x402 Volume", "description": "Weekly volume through x402 protocol for AI agents.", "goal": 100e6, "unit": "$M",
-     "fetch_current": lambda: lambda: 0, "fetch_historical": lambda: pd.DataFrame()},
-    {"title": "4. Onchain Vault AUM", "description": "AUM of onchain vault providers.", "goal": 36e9, "unit": "$B",
-     "fetch_current": lambda: fetch_defillama_category('vault'), "fetch_historical": lambda: pd.DataFrame()},
-    {"title": "5. Onchain Perpetual Futures Open Interest", "description": "Total perpetual futures open interest.", "goal": 50e9, "unit": "$B",
-     "fetch_current": lambda: fetch_defillama_oi(), "fetch_historical": lambda: pd.DataFrame()},
-    {"title": "6. Buyback Activity", "description": "Cumulative token buyback spend of top 10 programs.", "goal": 200e6, "unit": "$M",
-     "fetch_current": lambda: lambda: 0, "fetch_historical": lambda: pd.DataFrame()},
-    {"title": "7. Solana MEV Extraction", "description": "Solana-based MEV via validator and Jito tips.", "goal": 5000, "unit": "SOL",
-     "fetch_current": lambda: fetch_jito_mev(), "fetch_historical": lambda: fetch_jito_historical()},
-    {"title": "8. Shielded ZEC as Privacy Proxy", "description": "ZEC deposited to Zcash shielded pools.", "goal": 7e6, "unit": "ZEC",
-     "fetch_current": lambda: lambda: 0, "fetch_historical": lambda: pd.DataFrame()},
-    {"title": "9. Ethereum’s Blob Fee Floor", "description": "Median hourly blob cost.", "goal": 0.05, "unit": "$",
-     "fetch_current": lambda: fetch_blob_fee(), "fetch_historical": lambda: pd.DataFrame()},
-    {"title": "10. Crypto Cards Spend Volume", "description": "Monthly spend volume through crypto-linked cards.", "goal": 500e6, "unit": "$M",
-     "fetch_current": lambda: lambda: 0, "fetch_historical": lambda: pd.DataFrame()},
-    {"title": "11. Spot BTC ETF AUM", "description": "BTC held by US spot Bitcoin ETFs.", "goal": 2.5e6, "unit": "BTC",
-     "fetch_current": lambda: fetch_coinglass_etf_aum(), "fetch_historical": lambda: pd.DataFrame()},
-    {"title": "12. Onchain Stablecoin Borrow Rates", "description": "Aave USDC variable borrow APY on Ethereum.", "goal": 5.0, "unit": "%",
-     "fetch_current": lambda: fetch_aave_usdc_borrow(), "fetch_historical": lambda: pd.DataFrame()},
+    {
+        "title": "1. Prediction Market Volumes by Market-Type",
+        "description": "Weekly total prediction market trading volume (placeholder).",
+        "goal": 25e9,
+        "unit": "$B",
+        "fetch_current": lambda: 5.0,  # simple placeholder
+        "fetch_historical": lambda: pd.DataFrame({"Week": [1,2], "Value": [2.0, 4.0]})
+    },
+    {
+        "title": "7. Solana MEV Extraction",
+        "description": "Solana-based MEV (placeholder).",
+        "goal": 5000,
+        "unit": "SOL",
+        "fetch_current": lambda: 1000.0,
+        "fetch_historical": lambda: pd.DataFrame({"Week": [1,2], "Value": [500, 800]})
+    },
+    # Add the other 10 back one-by-one later once this works
 ]
 
-# ────────────────────────────────────────────────
-# Real API Fetch Helpers (with caching & fallbacks)
-# ────────────────────────────────────────────────
-@st.cache_data(ttl=600)
-def fetch_polymarket_volume():
-    try:
-        r = requests.get("https://gamma-api.polymarket.com/markets?active=true&limit=100")
-        markets = r.json()
-        total_vol = sum(m.get('volume24h', 0) for m in markets)
-        return total_vol / 1e9 * 7  # rough weekly proxy
-    except:
-        return 5.0
+st.write(f"**Debug Step 3:** Metrics list defined ({len(metrics)} items loaded).")
+
+# Simple render loop
+for i, metric in enumerate(metrics):
+    st.subheader(metric["title"])
+    st.write(metric["description"])
+
+    current = metric["fetch_current"]()
+    historical = metric["fetch_historical"]()
+
+    progress = min(current / metric["goal"], 1.0) if metric["goal"] > 0 else 0
+    st.progress(progress)
+    st.write(f"Current: {current:,.2f} {metric['unit']} / Goal: {metric['goal']:,.2f} {metric['unit']} ({progress:.1%})")
+
+    # Gauge with unique key
+    fig_gauge = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=progress * 100,
+        domain={'x': [0, 1], 'y': [0, 1]},
+        title={'text': "Progress"},
+        gauge={'axis': {'range': [0, 100]}, 'bar': {'color': "royalblue"}}))
+    fig_gauge.update_layout(height=250)
+    st.plotly_chart(fig_gauge, use_container_width=True, key=f"gauge_debug_{i}")
+
+    # Line if historical
+    if not historical.empty:
+        fig_line = px.line(historical, x='Week', y='Value', title='Trend (Debug)')
+        fig_line.update_layout(height=250)
+        st.plotly_chart(fig_line, use_container_width=True, key=f"line_debug_{i}")
+
+    st.markdown("---")
+
+st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S AEDT')} | Debug mode (only 2 metrics). If you see this + 2 metrics, add the rest back gradually.")
+
+st.write("**Debug Step 4:** End of script reached. If nothing above this line shows except title, crash happened between Step 3 and here.")
